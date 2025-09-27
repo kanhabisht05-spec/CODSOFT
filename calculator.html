@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 450px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .calculator:hover {
+            transform: translateY(-5px);
+        }
+
+        .display-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .display-container.calculating::before {
+            left: 100%;
+        }
+
+        .history {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            text-align: right;
+            margin-bottom: 5px;
+            min-height: 20px;
+        }
+
+        .display {
+            color: white;
+            font-size: 36px;
+            text-align: right;
+            font-weight: 300;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            overflow: hidden;
+        }
+
+        .memory-indicator {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .memory-indicator.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 500;
+            height: 60px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn:active::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.number {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn.operator {
+            background: rgba(255, 107, 107, 0.8);
+            color: white;
+        }
+
+        .btn.function {
+            background: rgba(74, 144, 226, 0.8);
+            color: white;
+            font-size: 14px;
+        }
+
+        .btn.clear {
+            background: rgba(255, 193, 7, 0.8);
+            color: white;
+        }
+
+        .btn.equals {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn.zero {
+            grid-column: span 2;
+        }
+
+        .error {
+            color: #ff6b6b !important;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .btn-animate {
+            animation: btnPress 0.1s ease;
+        }
+
+        @keyframes btnPress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .btn {
+                height: 50px;
+                font-size: 16px;
+            }
+            
+            .display {
+                font-size: 28px;
+            }
+            
+            .buttons-grid {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="mode-indicator">Scientific Mode</div>
+        <div class="display-container">
+            <div class="memory-indicator" id="memoryIndicator">M</div>
+            <div class="history" id="history"></div>
+            <div class="display" id="display">0</div>
+        </div>
+        
+        <div class="buttons-grid">
+            <!-- Row 1 - Functions -->
+            <button class="btn function" onclick="clearMemory()">MC</button>
+            <button class="btn function" onclick="recallMemory()">MR</button>
+            <button class="btn function" onclick="addToMemory()">M+</button>
+            <button class="btn function" onclick="subtractFromMemory()">M-</button>
+            <button class="btn function" onclick="storeMemory()">MS</button>
+            
+            <!-- Row 2 - Advanced Functions -->
+            <button class="btn function" onclick="calculateFunction('sin')">sin</button>
+            <button class="btn function" onclick="calculateFunction('cos')">cos</button>
+            <button class="btn function" onclick="calculateFunction('tan')">tan</button>
+            <button class="btn function" onclick="calculateFunction('log')">log</button>
+            <button class="btn function" onclick="calculateFunction('ln')">ln</button>
+            
+            <!-- Row 3 - More Functions -->
+            <button class="btn function" onclick="calculateFunction('sqrt')">√</button>
+            <button class="btn function" onclick="calculateFunction('square')">x²</button>
+            <button class="btn function" onclick="calculateFunction('power')">x^y</button>
+            <button class="btn function" onclick="calculateFunction('factorial')">x!</button>
+            <button class="btn function" onclick="inputNumber('3.14159')">π</button>
+            
+            <!-- Row 4 - Basic Functions -->
+            <button class="btn clear" onclick="clearAll()">AC</button>
+            <button class="btn clear" onclick="clearEntry()">CE</button>
+            <button class="btn function" onclick="backspace()">⌫</button>
+            <button class="btn function" onclick="calculateFunction('inverse')">1/x</button>
+            <button class="btn operator" onclick="inputOperator('/')"÷</button>
+            
+            <!-- Row 5 - Numbers -->
+            <button class="btn number" onclick="inputNumber('7')">7</button>
+            <button class="btn number" onclick="inputNumber('8')">8</button>
+            <button class="btn number" onclick="inputNumber('9')">9</button>
+            <button class="btn operator" onclick="inputOperator('*')">×</button>
+            <button class="btn function" onclick="calculateFunction('percent')">%</button>
+            
+            <!-- Row 6 -->
+            <button class="btn number" onclick="inputNumber('4')">4</button>
+            <button class="btn number" onclick="inputNumber('5')">5</button>
+            <button class="btn number" onclick="inputNumber('6')">6</button>
+            <button class="btn operator" onclick="inputOperator('-')">-</button>
+            <button class="btn function" onclick="toggleSign()">±</button>
+            
+            <!-- Row 7 -->
+            <button class="btn number" onclick="inputNumber('1')">1</button>
+            <button class="btn number" onclick="inputNumber('2')">2</button>
+            <button class="btn number" onclick="inputNumber('3')">3</button>
+            <button class="btn operator" onclick="inputOperator('+')">+</button>
+            <button class="btn function" onclick="inputNumber('2.71828')">e</button>
+            
+            <!-- Row 8 -->
+            <button class="btn number zero" onclick="inputNumber('0')">0</button>
+            <button class="btn number" onclick="inputDecimal()">.</button>
+            <button class="btn equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let history = document.getElementById('history');
+        let memoryIndicator = document.getElementById('memoryIndicator');
+        
+        let currentNumber = '0';
+        let previousNumber = '';
+        let operation = null;
+        let waitingForOperand = false;
+        let memory = 0;
+        let lastCalculation = '';
+
+        function updateDisplay() {
+            display.textContent = currentNumber;
+            if (memory !== 0) {
+                memoryIndicator.classList.add('active');
+            } else {
+                memoryIndicator.classList.remove('active');
+            }
+        }
+
+        function updateHistory(text) {
+            history.textContent = text;
+        }
+
+        function animateButton(button) {
+            button.classList.add('btn-animate');
+            setTimeout(() => button.classList.remove('btn-animate'), 100);
+        }
+
+        function inputNumber(num) {
+            if (waitingForOperand) {
+                currentNumber = num;
+                waitingForOperand = false;
+            } else {
+                currentNumber = currentNumber === '0' ? num : currentNumber + num;
+            }
+            updateDisplay();
+        }
+
+        function inputDecimal() {
+            if (waitingForOperand) {
+                currentNumber = '0.';
+                waitingForOperand = false;
+            } else if (currentNumber.indexOf('.') === -1) {
+                currentNumber += '.';
+            }
+            updateDisplay();
+        }
+
+        function inputOperator(nextOperator) {
+            const inputValue = parseFloat(currentNumber);
+
+            if (previousNumber === '') {
+                previousNumber = inputValue;
+            } else if (operation) {
+                const result = performCalculation();
+                if (result === null) return;
+                
+                currentNumber = String(result);
+                previousNumber = result;
+                updateDisplay();
+            }
+
+            waitingForOperand = true;
+            operation = nextOperator;
+            updateHistory(`${previousNumber} ${getOperatorSymbol(nextOperator)}`);
+        }
+
+        function getOperatorSymbol(op) {
+            switch(op) {
+                case '+': return '+';
+                case '-': return '-';
+                case '*': return '×';
+                case '/': return '÷';
+                case '**': return '^';
+                default: return op;
+            }
+        }
+
+        function calculate() {
+            const inputValue = parseFloat(currentNumber);
+
+            if (previousNumber !== '' && operation) {
+                const result = performCalculation();
+                if (result === null) return;
+
+                lastCalculation = `${previousNumber} ${getOperatorSymbol(operation)} ${inputValue} =`;
+                currentNumber = String(result);
+                previousNumber = '';
+                operation = null;
+                waitingForOperand = true;
+                
+                updateHistory(lastCalculation);
+                updateDisplay();
+                
+                // Add calculating animation
+                document.querySelector('.display-container').classList.add('calculating');
+                setTimeout(() => {
+                    document.querySelector('.display-container').classList.remove('calculating');
+                }, 500);
+            }
+        }
+
+        function performCalculation() {
+            const prev = parseFloat(previousNumber);
+            const current = parseFloat(currentNumber);
+
+            if (isNaN(prev) || isNaN(current)) return null;
+
+            let result;
+            switch (operation) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        showError('Cannot divide by zero');
+                        return null;
+                    }
+                    result = prev / current;
+                    break;
+                case '**':
+                    result = Math.pow(prev, current);
+                    break;
+                default:
+                    return null;
+            }
+
+            return Math.round(result * 1000000000000) / 1000000000000; // Handle floating point precision
+        }
+
+        function calculateFunction(func) {
+            const value = parseFloat(currentNumber);
+            let result;
+
+            switch (func) {
+                case 'sin':
+                    result = Math.sin(value * Math.PI / 180);
+                    break;
+                case 'cos':
+                    result = Math.cos(value * Math.PI / 180);
+                    break;
+                case 'tan':
+                    result = Math.tan(value * Math.PI / 180);
+                    break;
+                case 'log':
+                    if (value <= 0) {
+                        showError('Invalid input for log');
+                        return;
+                    }
+                    result = Math.log10(value);
+                    break;
+                case 'ln':
+                    if (value <= 0) {
+                        showError('Invalid input for ln');
+                        return;
+                    }
+                    result = Math.log(value);
+                    break;
+                case 'sqrt':
+                    if (value < 0) {
+                        showError('Invalid input for sqrt');
+                        return;
+                    }
+                    result = Math.sqrt(value);
+                    break;
+                case 'square':
+                    result = value * value;
+                    break;
+                case 'power':
+                    inputOperator('**');
+                    return;
+                case 'factorial':
+                    if (value < 0 || !Number.isInteger(value)) {
+                        showError('Invalid input for factorial');
+                        return;
+                    }
+                    result = factorial(value);
+                    break;
+                case 'inverse':
+                    if (value === 0) {
+                        showError('Cannot divide by zero');
+                        return;
+                    }
+                    result = 1 / value;
+                    break;
+                case 'percent':
+                    result = value / 100;
+                    break;
+            }
+
+            currentNumber = String(Math.round(result * 1000000000000) / 1000000000000);
+            updateDisplay();
+            updateHistory(`${func}(${value}) =`);
+        }
+
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function toggleSign() {
+            if (currentNumber !== '0') {
+                if (currentNumber.charAt(0) === '-') {
+                    currentNumber = currentNumber.substr(1);
+                } else {
+                    currentNumber = '-' + currentNumber;
+                }
+                updateDisplay();
+            }
+        }
+
+        function backspace() {
+            if (currentNumber.length > 1) {
+                currentNumber = currentNumber.slice(0, -1);
+            } else {
+                currentNumber = '0';
+            }
+            updateDisplay();
+        }
+
+        function clearEntry() {
+            currentNumber = '0';
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentNumber = '0';
+            previousNumber = '';
+            operation = null;
+            waitingForOperand = false;
+            updateDisplay();
+            updateHistory('');
+        }
+
+        function storeMemory() {
+            memory = parseFloat(currentNumber);
+            updateDisplay();
+        }
+
+        function recallMemory() {
+            currentNumber = String(memory);
+            updateDisplay();
+        }
+
+        function addToMemory() {
+            memory += parseFloat(currentNumber);
+            updateDisplay();
+        }
+
+        function subtractFromMemory() {
+            memory -= parseFloat(currentNumber);
+            updateDisplay();
+        }
+
+        function clearMemory() {
+            memory = 0;
+            updateDisplay();
+        }
+
+        function showError(message) {
+            display.classList.add('error');
+            display.textContent = message;
+            setTimeout(() => {
+                display.classList.remove('error');
+                clearAll();
+            }, 2000);
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            
+            if ('0123456789'.includes(key)) {
+                inputNumber(key);
+            } else if (key === '.') {
+                inputDecimal();
+            } else if (key === '+') {
+                inputOperator('+');
+            } else if (key === '-') {
+                inputOperator('-');
+            } else if (key === '*') {
+                inputOperator('*');
+            } else if (key === '/') {
+                event.preventDefault();
+                inputOperator('/');
+            } else if (key === 'Enter' || key === '=') {
+                event.preventDefault();
+                calculate();
+            } else if (key === 'Escape') {
+                clearAll();
+            } else if (key === 'Backspace') {
+                event.preventDefault();
+                backspace();
+            }
+        });
+
+        // Add click animation to all buttons
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function() {
+                animateButton(this);
+            });
+        });
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
